@@ -17,7 +17,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Particle Canvas Animation
+// Canvas Background Animation
 const canvas = document.getElementById('nano-canvas');
 const ctx = canvas.getContext('2d');
 let particles = [];
@@ -26,7 +26,7 @@ function initParticles() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     particles = [];
-    for(let i=0; i<60; i++) {
+    for (let i = 0; i < 60; i++) {
         particles.push({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
@@ -44,16 +44,16 @@ function animateParticles() {
 
     particles.forEach((p, i) => {
         p.x += p.dx; p.y += p.dy;
-        if(p.x < 0 || p.x > canvas.width) p.dx *= -1;
-        if(p.y < 0 || p.y > canvas.height) p.dy *= -1;
+        if (p.x < 0 || p.x > canvas.width) p.dx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
         ctx.fill();
 
-        for(let j = i + 1; j < particles.length; j++) {
+        for (let j = i + 1; j < particles.length; j++) {
             const dist = Math.hypot(p.x - particles[j].x, p.y - particles[j].y);
-            if(dist < 120) {
+            if (dist < 120) {
                 ctx.beginPath();
                 ctx.moveTo(p.x, p.y);
                 ctx.lineTo(particles[j].x, particles[j].y);
@@ -64,16 +64,20 @@ function animateParticles() {
     requestAnimationFrame(animateParticles);
 }
 window.addEventListener('resize', initParticles);
-initParticles(); animateParticles();
+initParticles();
+animateParticles();
 
-// Login & Session logic
+// Login & Session Handling
 document.getElementById('login-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    if (document.getElementById('email').value === AUTH.email && document.getElementById('password').value === AUTH.pass) {
+    const inputEmail = document.getElementById('email').value.trim();
+    const inputPass = document.getElementById('password').value.trim();
+
+    if (inputEmail === AUTH.email && inputPass === AUTH.pass) {
         sessionStorage.setItem('isLoggedIn', 'true');
         showDashboard();
-    } else { 
-        alert("Access Denied!"); 
+    } else {
+        alert("Access Denied! Incorrect email or password.");
     }
 });
 
@@ -89,36 +93,7 @@ function showDashboard() {
     renderGallery();
 }
 
-// Compression & Base64 Engine (< 3MB)
-document.getElementById('file-input').addEventListener('change', async (e) => {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
-
-    document.getElementById('tag-input-group').classList.remove('hidden');
-    promptModal("GitHub API Push", "Enter PAT Token to process upload:", async (token) => {
-        const tagVal = document.getElementById('modal-tag').value || 'General';
-        document.getElementById('tag-input-group').classList.add('hidden');
-
-        for (let file of files) {
-            const compressedBase64 = await compressAndEncode(file);
-            
-            const sizeInBytes = compressedBase64.length;
-            if (totalUsedBytes + sizeInBytes > 900 * 1024 * 1024) {
-                currentRepoIndex++;
-                totalUsedBytes = 0;
-                document.getElementById('repo-status').innerText = `Connected: Repo-${currentRepoIndex} (Auto-Shifted)`;
-            }
-            totalUsedBytes += sizeInBytes;
-            updateStorageMeter();
-
-            const imgObj = { id: Date.now() + Math.random(), src: compressedBase64, fav: false, tag: tagVal };
-            imagesData.push(imgObj);
-        }
-        localStorage.setItem('vault_images', JSON.stringify(imagesData));
-        renderGallery();
-    });
-});
-
+// Image Compression Helper
 function compressAndEncode(file) {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -127,26 +102,90 @@ function compressAndEncode(file) {
             const img = new Image();
             img.src = e.target.result;
             img.onload = () => {
-                const canvas = document.createElement('canvas');
+                const cvs = document.createElement('canvas');
                 let w = img.width, h = img.height;
-                if (w > 1920) { h = Math.round((h * 1920) / w); w = 1920; }
-                canvas.width = w; canvas.height = h;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, w, h);
+                if (w > 1200) { h = Math.round((h * 1200) / w); w = 1200; }
+                cvs.width = w; cvs.height = h;
+                const c2d = cvs.getContext('2d');
+                c2d.drawImage(img, 0, 0, w, h);
 
-                let quality = 0.9;
-                let base64 = canvas.toDataURL('image/jpeg', quality);
-                while (base64.length > 3 * 1024 * 1024 && quality > 0.1) {
-                    quality -= 0.1;
-                    base64 = canvas.toDataURL('image/jpeg', quality);
-                }
+                let base64 = cvs.toDataURL('image/jpeg', 0.7);
                 resolve(base64);
             };
         };
     });
 }
 
-// Gallery Render
+// Upload Handling (Local + GitHub optional)
+document.getElementById('file-input').addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    document.getElementById('tag-input-group').classList.remove('hidden');
+    promptModal("Upload Processing", "Enter Token (Optional, click Confirm to save directly):", async (token) => {
+        const tagVal = document.getElementById('modal-tag').value || 'General';
+        document.getElementById('tag-input-group').classList.add('hidden');
+
+        for (let file of files) {
+            try {
+                const compressedBase64 = await compressAndEncode(file);
+                const imgObj = {
+                    id: Date.now() + Math.random(),
+                    src: compressedBase64,
+                    fav: false,
+                    tag: tagVal
+                };
+                imagesData.push(imgObj);
+
+                if (token && token.trim() !== '') {
+                    await uploadToGitHub(file.name, compressedBase64, token);
+                }
+            } catch (err) {
+                console.error("Upload error:", err);
+            }
+        }
+
+        try {
+            localStorage.setItem('vault_images', JSON.stringify(imagesData));
+        } catch (err) {
+            alert("Local Storage Limit Reached!");
+        }
+
+        calculateInitialStorage();
+        renderGallery();
+        e.target.value = ''; // Reset input
+    });
+});
+
+// GitHub Upload Request
+async function uploadToGitHub(fileName, base64Data, token) {
+    const rawBase64 = base64Data.split(',')[1];
+    const cleanFileName = Date.now() + "_" + fileName.replace(/[^a-zA-Z0-9.]/g, "_");
+    
+    // প্রয়োজনে নিজের ইউজারনেম ও রেপো নেম দিয়ে পরিবর্তন করতে পারো
+    const repoOwner = "SIYAMBOSS";
+    const repoName = "photo-hub-storage";
+
+    const url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/uploads/${cleanFileName}`;
+
+    try {
+        await fetch(url, {
+            method: "PUT",
+            headers: {
+                "Authorization": `token ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                message: `Upload photo ${cleanFileName}`,
+                content: rawBase64
+            })
+        });
+    } catch (e) {
+        console.log("GitHub sync bypassed.");
+    }
+}
+
+// Render Gallery Cards
 function renderGallery() {
     const gallery = document.getElementById('gallery');
     gallery.innerHTML = '';
@@ -157,6 +196,11 @@ function renderGallery() {
         const matchSearch = item.tag.toLowerCase().includes(searchTag);
         return matchTab && matchSearch;
     });
+
+    if (filtered.length === 0) {
+        gallery.innerHTML = `<p style="color: var(--text-dim); text-align: center; grid-column: 1/-1;">No photos available. Click lower right (+) button to upload.</p>`;
+        return;
+    }
 
     filtered.forEach(item => {
         const card = document.createElement('div');
@@ -203,15 +247,19 @@ function calculateInitialStorage() {
 function updateStorageMeter() {
     const mb = (totalUsedBytes / (1024 * 1024)).toFixed(1);
     document.getElementById('storage-txt').innerText = `${mb} MB / 1024 MB`;
-    document.getElementById('meter-fill').style.width = `${(mb / 1024) * 100}%`;
+    document.getElementById('meter-fill').style.width = `${Math.min((mb / 1024) * 100, 100)}%`;
 }
 
 function downloadImage(src) {
-    promptModal("Security Passcode", "Enter download passcode to save:", (pass) => {
+    promptModal("Security Passcode", "Enter passcode to download:", (pass) => {
         if (pass === AUTH.savePass) {
             const a = document.createElement('a');
-            a.href = src; a.download = `PhotoHub_${Date.now()}.jpg`; a.click();
-        } else alert("Wrong Passcode!");
+            a.href = src;
+            a.download = `SiyamBoss_Hub_${Date.now()}.jpg`;
+            a.click();
+        } else {
+            alert("Wrong Passcode!");
+        }
     });
 }
 
@@ -219,7 +267,10 @@ function openLightbox(src) {
     document.getElementById('lightbox-img').src = src;
     document.getElementById('lightbox').classList.remove('hidden');
 }
-function closeLightbox() { document.getElementById('lightbox').classList.add('hidden'); }
+
+function closeLightbox() {
+    document.getElementById('lightbox').classList.add('hidden');
+}
 
 function promptModal(title, desc, callback) {
     const modal = document.getElementById('modal-sec');
@@ -237,4 +288,4 @@ function promptModal(title, desc, callback) {
         modal.classList.add('hidden');
         callback(input.value);
     });
-                       }
+             }
