@@ -9,7 +9,7 @@ let totalUsedBytes = 0;
 let imagesData = JSON.parse(localStorage.getItem('vault_images')) || [];
 let activeTab = 'all';
 
-// Check Auth State on Page Load (Persists across refresh)
+// Check Auth State on Page Load
 window.addEventListener('DOMContentLoaded', () => {
     const isLogged = sessionStorage.getItem('isLoggedIn');
     if (isLogged === 'true') {
@@ -17,7 +17,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Canvas Background Animation
+// Canvas Animation
 const canvas = document.getElementById('nano-canvas');
 const ctx = canvas.getContext('2d');
 let particles = [];
@@ -67,7 +67,7 @@ window.addEventListener('resize', initParticles);
 initParticles();
 animateParticles();
 
-// Login & Session Handling
+// Login Logic
 document.getElementById('login-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const inputEmail = document.getElementById('email').value.trim();
@@ -77,7 +77,7 @@ document.getElementById('login-form').addEventListener('submit', (e) => {
         sessionStorage.setItem('isLoggedIn', 'true');
         showDashboard();
     } else {
-        alert("Access Denied! Incorrect email or password.");
+        alert("Access Denied! Incorrect credentials.");
     }
 });
 
@@ -93,7 +93,7 @@ function showDashboard() {
     renderGallery();
 }
 
-// Image Compression Helper
+// Compress Image
 function compressAndEncode(file) {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -116,68 +116,73 @@ function compressAndEncode(file) {
     });
 }
 
-// Upload Handling (Local + GitHub API Sync)
+// Upload Handler
 document.getElementById('file-input').addEventListener('change', async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
 
     document.getElementById('tag-input-group').classList.remove('hidden');
-    promptModal("Upload Processing", "Enter PAT Token to upload to GitHub Photographs repo:", async (token) => {
+    promptModal("GitHub Upload", "GitHub PAT Token টি পেস্ট করুন:", async (token) => {
         const tagVal = document.getElementById('modal-tag').value || 'General';
         document.getElementById('tag-input-group').classList.add('hidden');
+
+        if (!token || token.trim() === '') {
+            alert("Token না দিলে GitHub-এ সেভ হবে না!");
+            return;
+        }
 
         for (let file of files) {
             try {
                 const compressedBase64 = await compressAndEncode(file);
-                const imgObj = {
-                    id: Date.now() + Math.random(),
-                    src: compressedBase64,
-                    fav: false,
-                    tag: tagVal
-                };
-                imagesData.push(imgObj);
+                const isUploaded = await uploadToGitHub(file.name, compressedBase64, token.trim());
 
-                if (token && token.trim() !== '') {
-                    await uploadToGitHub(file.name, compressedBase64, token);
-                } else {
-                    alert("Token দেওয়া হয়নি! ছবি শুধু লোকালি সেভ করা হয়েছে।");
+                if (isUploaded) {
+                    const imgObj = {
+                        id: Date.now() + Math.random(),
+                        src: compressedBase64,
+                        fav: false,
+                        tag: tagVal
+                    };
+                    imagesData.push(imgObj);
                 }
             } catch (err) {
-                console.error("Upload error:", err);
+                console.error("Processing error:", err);
             }
         }
 
         try {
             localStorage.setItem('vault_images', JSON.stringify(imagesData));
         } catch (err) {
-            alert("Local Storage Limit Reached!");
+            console.log("Local storage full");
         }
 
         calculateInitialStorage();
         renderGallery();
-        e.target.value = ''; // Reset input
+        e.target.value = '';
     });
 });
 
-// GitHub API Upload Handler (SIYAMBOSS/Photographs)
+// GitHub API Direct Root Direct Upload
 async function uploadToGitHub(fileName, base64Data, token) {
     const rawBase64 = base64Data.split(',')[1];
-    const cleanFileName = Date.now() + "_" + fileName.replace(/[^a-zA-Z0-9.]/g, "_");
+    const cleanFileName = "img_" + Date.now() + "_" + fileName.replace(/[^a-zA-Z0-9.]/g, "_");
     
     const repoOwner = "SIYAMBOSS";
     const repoName = "Photographs";
 
-    const url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/uploads/${cleanFileName}`;
+    // Direct Upload to Repo Root Directory
+    const url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${cleanFileName}`;
 
     try {
         const response = await fetch(url, {
             method: "PUT",
             headers: {
-                "Authorization": `token ${token.trim()}`,
+                "Authorization": `Bearer ${token}`,
                 "Content-Type": "application/json",
+                "Accept": "application/vnd.github.v3+json"
             },
             body: JSON.stringify({
-                message: `Upload photo ${cleanFileName}`,
+                message: `Add photo ${cleanFileName}`,
                 content: rawBase64
             })
         });
@@ -185,18 +190,21 @@ async function uploadToGitHub(fileName, base64Data, token) {
         const resData = await response.json();
         
         if (response.ok) {
-            alert("GitHub 'Photographs' রেপোতে সফলভাবে ছবি জমার জন্য ফাইল পাঠানো হয়েছে! 🎉");
+            alert("🎉 GitHub 'Photographs' রেপোতে ফাইলটি জমা হয়েছে!");
+            return true;
         } else {
-            console.error("GitHub API Error:", resData);
-            alert("GitHub Upload Failed: " + (resData.message || "Token error or permission denied"));
+            console.error("GitHub Error:", resData);
+            alert("❌ GitHub-এ জমা হয়নি! কারণ: " + (resData.message || "Token Permission Error"));
+            return false;
         }
     } catch (e) {
-        console.error("Network / Sync Error:", e);
-        alert("Network Error during GitHub Upload!");
+        console.error("Network Error:", e);
+        alert("নেটওয়ার্ক সমস্যার কারণে আপলোড ব্যর্থ হয়েছে!");
+        return false;
     }
 }
 
-// Render Gallery Cards
+// Render Gallery
 function renderGallery() {
     const gallery = document.getElementById('gallery');
     gallery.innerHTML = '';
@@ -209,7 +217,7 @@ function renderGallery() {
     });
 
     if (filtered.length === 0) {
-        gallery.innerHTML = `<p style="color: var(--text-dim); text-align: center; grid-column: 1/-1;">No photos available. Click lower right (+) button to upload.</p>`;
+        gallery.innerHTML = `<p style="color: var(--text-dim); text-align: center; grid-column: 1/-1;">No photos found. Tap + button to upload.</p>`;
         return;
     }
 
@@ -280,6 +288,7 @@ function openLightbox(src) {
 }
 
 function closeLightbox() {
+    document.getElementById('lightbox-img').src = "";
     document.getElementById('lightbox').classList.add('hidden');
 }
 
@@ -299,4 +308,4 @@ function promptModal(title, desc, callback) {
         modal.classList.add('hidden');
         callback(input.value);
     });
-    }
+}
