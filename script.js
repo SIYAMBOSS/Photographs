@@ -116,13 +116,13 @@ function compressAndEncode(file) {
     });
 }
 
-// Upload Handling (Local + GitHub optional)
+// Upload Handling (Local + GitHub API Sync)
 document.getElementById('file-input').addEventListener('change', async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
 
     document.getElementById('tag-input-group').classList.remove('hidden');
-    promptModal("Upload Processing", "Enter Token (Optional, click Confirm to save directly):", async (token) => {
+    promptModal("Upload Processing", "Enter PAT Token to upload to GitHub Photographs repo:", async (token) => {
         const tagVal = document.getElementById('modal-tag').value || 'General';
         document.getElementById('tag-input-group').classList.add('hidden');
 
@@ -139,6 +139,8 @@ document.getElementById('file-input').addEventListener('change', async (e) => {
 
                 if (token && token.trim() !== '') {
                     await uploadToGitHub(file.name, compressedBase64, token);
+                } else {
+                    alert("Token দেওয়া হয়নি! ছবি শুধু লোকালি সেভ করা হয়েছে।");
                 }
             } catch (err) {
                 console.error("Upload error:", err);
@@ -157,22 +159,21 @@ document.getElementById('file-input').addEventListener('change', async (e) => {
     });
 });
 
-// GitHub Upload Request
+// GitHub API Upload Handler (SIYAMBOSS/Photographs)
 async function uploadToGitHub(fileName, base64Data, token) {
     const rawBase64 = base64Data.split(',')[1];
     const cleanFileName = Date.now() + "_" + fileName.replace(/[^a-zA-Z0-9.]/g, "_");
     
-    // প্রয়োজনে নিজের ইউজারনেম ও রেপো নেম দিয়ে পরিবর্তন করতে পারো
     const repoOwner = "SIYAMBOSS";
-    const repoName = "photo-hub-storage";
+    const repoName = "Photographs";
 
     const url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/uploads/${cleanFileName}`;
 
     try {
-        await fetch(url, {
+        const response = await fetch(url, {
             method: "PUT",
             headers: {
-                "Authorization": `token ${token}`,
+                "Authorization": `token ${token.trim()}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
@@ -180,8 +181,18 @@ async function uploadToGitHub(fileName, base64Data, token) {
                 content: rawBase64
             })
         });
+
+        const resData = await response.json();
+        
+        if (response.ok) {
+            alert("GitHub 'Photographs' রেপোতে সফলভাবে ছবি জমার জন্য ফাইল পাঠানো হয়েছে! 🎉");
+        } else {
+            console.error("GitHub API Error:", resData);
+            alert("GitHub Upload Failed: " + (resData.message || "Token error or permission denied"));
+        }
     } catch (e) {
-        console.log("GitHub sync bypassed.");
+        console.error("Network / Sync Error:", e);
+        alert("Network Error during GitHub Upload!");
     }
 }
 
@@ -288,4 +299,4 @@ function promptModal(title, desc, callback) {
         modal.classList.add('hidden');
         callback(input.value);
     });
-             }
+    }
