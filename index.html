@@ -3,52 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VaultHub Premium</title>
+    <title>VaultHub Nano-Tech Edition</title>
     <style>
         :root {
-            --bg-color: #0d0f17;
-            --card-bg: rgba(23, 27, 44, 0.7);
-            --accent-color: #6c5ce7;
-            --accent-hover: #5a4bcf;
-            --text-color: #f1f2f6;
-            --border-color: rgba(255, 255, 255, 0.1);
+            --bg-color: #030712;
+            --card-bg: rgba(15, 23, 42, 0.65);
+            --nano-cyan: #00f2fe;
+            --nano-blue: #4facfe;
+            --nano-purple: #7d5fff;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --border-nano: rgba(0, 242, 254, 0.2);
+            --glow-cyan: 0 0 15px rgba(0, 242, 254, 0.4);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
 
         body {
-            background: radial-gradient(circle at top right, #1a1c2e, var(--bg-color));
-            color: var(--text-color);
+            background: var(--bg-color);
+            color: var(--text-main);
             min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Nano-Particle Background Animation */
+        canvas#nano-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .relative-zone { position: relative; z-index: 10; }
+        .hidden { display: none !important; }
+
+        /* Login Screen */
+        .login-wrapper {
             display: flex;
             justify-content: center;
             align-items: center;
+            min-height: 100vh;
         }
 
-        .hidden { display: none !important; }
-
-        /* Login Container */
-        .login-card {
+        .nano-card {
             background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--border-color);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-nano);
+            box-shadow: var(--glow-cyan);
+            border-radius: 24px;
             padding: 40px;
-            border-radius: 20px;
             width: 100%;
-            max-width: 400px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            max-width: 420px;
             text-align: center;
         }
 
-        .login-card h2 {
-            margin-bottom: 25px;
+        .nano-card h2 {
             font-size: 28px;
-            color: #fff;
+            background: linear-gradient(135deg, var(--nano-cyan), var(--nano-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 25px;
             letter-spacing: 1px;
         }
 
@@ -60,254 +83,416 @@
         .input-group label {
             display: block;
             margin-bottom: 8px;
-            font-size: 13px;
-            color: #a0a5b5;
+            font-size: 12px;
+            color: var(--text-dim);
+            text-transform: uppercase;
         }
 
-        .input-group input {
+        .input-group input, .nano-select {
             width: 100%;
-            padding: 12px 15px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            color: #fff;
+            padding: 14px;
+            background: rgba(3, 7, 18, 0.6);
+            border: 1px solid var(--border-nano);
+            border-radius: 12px;
+            color: var(--text-main);
             outline: none;
             transition: 0.3s;
         }
 
         .input-group input:focus {
-            border-color: var(--accent-color);
+            border-color: var(--nano-cyan);
+            box-shadow: var(--glow-cyan);
         }
 
-        .btn {
+        .btn-nano {
             width: 100%;
-            padding: 12px;
-            background: var(--accent-color);
+            padding: 14px;
+            background: linear-gradient(135deg, var(--nano-cyan), var(--nano-blue));
             border: none;
-            border-radius: 10px;
-            color: #fff;
-            font-weight: bold;
+            border-radius: 12px;
+            color: #000;
+            font-weight: 700;
             cursor: pointer;
             transition: 0.3s;
         }
 
-        .btn:hover { background: var(--accent-hover); }
+        .btn-nano:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--glow-cyan);
+        }
 
-        /* Main Dashboard */
+        /* Dashboard */
         .dashboard {
-            width: 100%;
-            max-width: 1200px;
-            padding: 30px;
-            min-height: 100vh;
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 20px;
         }
 
         header {
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--border-color);
+            gap: 20px;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-nano);
+            margin-bottom: 20px;
         }
 
-        .actions {
+        /* Storage Meter */
+        .storage-widget {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-nano);
+            padding: 12px 20px;
+            border-radius: 16px;
+            min-width: 250px;
+        }
+
+        .meter-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .meter-fill {
+            height: 100%;
+            width: 15%;
+            background: linear-gradient(90deg, var(--nano-cyan), var(--nano-purple));
+            transition: width 0.5s;
+        }
+
+        /* Controls Area */
+        .controls {
             display: flex;
+            flex-wrap: wrap;
             gap: 15px;
+            margin-bottom: 25px;
+            align-items: center;
         }
 
-        .file-label {
-            background: var(--accent-color);
-            padding: 10px 20px;
+        .search-box { flex: 1; min-width: 200px; }
+
+        .view-toggle {
+            display: flex;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-nano);
             border-radius: 10px;
-            cursor: pointer;
-            font-weight: bold;
-            display: inline-block;
+            overflow: hidden;
         }
 
-        /* Gallery Grid */
-        .gallery {
+        .view-btn {
+            padding: 10px 15px;
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+        }
+
+        .view-btn.active {
+            background: var(--nano-cyan);
+            color: #000;
+            font-weight: bold;
+        }
+
+        /* Gallery Modes */
+        .gallery-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             gap: 20px;
         }
 
+        .gallery-masonry {
+            column-count: 4;
+            column-gap: 20px;
+        }
+        .gallery-masonry .photo-card { margin-bottom: 20px; break-inside: avoid; }
+
         .photo-card {
             background: var(--card-bg);
-            border-radius: 15px;
+            border: 1px solid var(--border-nano);
+            border-radius: 16px;
             overflow: hidden;
-            border: 1px solid var(--border-color);
             position: relative;
-            group: hover;
+            transition: 0.3s;
+        }
+
+        .photo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--glow-cyan);
         }
 
         .photo-card img {
             width: 100%;
-            height: 200px;
-            object-fit: cover;
             display: block;
+            object-fit: cover;
         }
 
-        .photo-overlay {
+        .card-actions {
             position: absolute;
             inset: 0;
-            background: rgba(0,0,0,0.6);
+            background: rgba(3, 7, 18, 0.7);
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
+            gap: 10px;
             opacity: 0;
             transition: 0.3s;
         }
 
-        .photo-card:hover .photo-overlay { opacity: 1; }
+        .photo-card:hover .card-actions { opacity: 1; }
 
-        .download-btn {
-            background: #2ed573;
-            color: #fff;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 8px;
+        .fav-heart {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #ef4444;
             cursor: pointer;
-            font-weight: bold;
+            font-size: 20px;
         }
 
-        /* Modal */
-        .modal {
+        .tag-badge {
+            font-size: 10px;
+            background: var(--nano-purple);
+            padding: 3px 8px;
+            border-radius: 12px;
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+        }
+
+        /* Lightbox Fullscreen */
+        .lightbox {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.95);
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            z-index: 2000;
         }
 
-        .modal-content {
-            background: var(--card-bg);
-            padding: 30px;
-            border-radius: 15px;
-            border: 1px solid var(--border-color);
-            width: 320px;
-            text-align: center;
+        .lightbox img {
+            max-width: 90%;
+            max-height: 85vh;
+            border-radius: 12px;
+            box-shadow: var(--glow-cyan);
+        }
+
+        /* Modals */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1500;
         }
     </style>
 </head>
 <body>
 
-    <!-- Login Section -->
-    <div id="login-sec" class="login-card">
-        <h2>VaultHub Access</h2>
-        <form id="login-form">
-            <div class="input-group">
-                <label>Email</label>
-                <input type="email" id="email" value="sadaf245sz@gmail.com" required>
+    <canvas id="nano-canvas"></canvas>
+
+    <div class="relative-zone">
+        <div id="login-sec" class="login-wrapper">
+            <div class="nano-card">
+                <h2>NANO VAULT</h2>
+                <form id="login-form">
+                    <div class="input-group">
+                        <label>Email</label>
+                        <input type="email" id="email" value="sadaf245sz@gmail.com" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Password</label>
+                        <input type="password" id="password" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn-nano">AUTHENTICATE</button>
+                </form>
             </div>
-            <div class="input-group">
-                <label>Password</label>
-                <input type="password" id="password" placeholder="••••••••" required>
+        </div>
+
+        <div id="dashboard-sec" class="dashboard hidden">
+            <header>
+                <div>
+                    <h1 style="background: linear-gradient(135deg, var(--nano-cyan), #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">NANO-HUB</h1>
+                    <p style="font-size: 12px; color: var(--text-dim);" id="repo-status">Connected: Repo-1</p>
+                </div>
+
+                <div class="storage-widget">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                        <span>Repo Usage</span>
+                        <span id="storage-txt">0 MB / 1024 MB</span>
+                    </div>
+                    <div class="meter-bar"><div id="meter-fill" class="meter-fill"></div></div>
+                </div>
+
+                <div>
+                    <label for="file-input" class="btn-nano" style="padding: 12px 20px; display: inline-block;">+ Upload Image</label>
+                    <input type="file" id="file-input" multiple accept="image/*" class="hidden">
+                </div>
+            </header>
+
+            <div class="controls">
+                <div class="search-box input-group" style="margin: 0;">
+                    <input type="text" id="search-input" placeholder="Search by tag...">
+                </div>
+
+                <div class="view-toggle">
+                    <button class="view-btn active" onclick="switchTab('all')">All</button>
+                    <button class="view-btn" onclick="switchTab('favs')">Favorites ♥</button>
+                </div>
+
+                <div class="view-toggle">
+                    <button class="view-btn active" id="btn-grid" onclick="setLayout('grid')">Grid</button>
+                    <button class="view-btn" id="btn-masonry" onclick="setLayout('masonry')">Masonry</button>
+                </div>
             </div>
-            <button type="submit" class="btn">Unlock Vault</button>
-        </form>
+
+            <div id="gallery" class="gallery-grid"></div>
+        </div>
     </div>
 
-    <!-- Main Dashboard Section -->
-    <div id="dashboard-sec" class="dashboard hidden">
-        <header>
-            <h1>My Vault Gallery</h1>
-            <div class="actions">
-                <label for="file-input" class="file-label">+ Upload Photos</label>
-                <input type="file" id="file-input" multiple accept="image/*" class="hidden">
-            </div>
-        </header>
-
-        <div id="gallery" class="gallery"></div>
+    <div id="lightbox" class="lightbox hidden" onclick="closeLightbox()">
+        <img id="lightbox-img" src="">
     </div>
 
-    <!-- Modal for API Token / Save Password -->
     <div id="modal-sec" class="modal hidden">
-        <div class="modal-content">
-            <h3 id="modal-title">Enter Passcode</h3>
-            <p id="modal-desc" style="font-size: 12px; margin: 10px 0; color: #a0a5b5;"></p>
+        <div class="nano-card">
+            <h3 id="modal-title" style="color: var(--nano-cyan); margin-bottom: 10px;">Security Check</h3>
+            <p id="modal-desc" style="font-size: 12px; color: var(--text-dim); margin-bottom: 15px;"></p>
             <div class="input-group">
-                <input type="password" id="modal-input" placeholder="Type here...">
+                <input type="password" id="modal-input" placeholder="Enter Value">
             </div>
-            <button id="modal-submit" class="btn">Submit</button>
+            <div class="input-group hidden" id="tag-input-group">
+                <label>Add Tag (Optional)</label>
+                <input type="text" id="modal-tag" placeholder="e.g., Travel, Secret">
+            </div>
+            <button id="modal-submit" class="btn-nano">CONFIRM</button>
         </div>
     </div>
 
     <script>
-        // Security Credentials
         const AUTH = {
             email: "sadaf245sz@gmail.com",
             pass: "Siyam123@#",
             savePass: "135780"
         };
 
-        let currentRepo = "photo-vault-1";
-        let pendingBase64Images = [];
-        let imageToDownload = null;
+        let currentRepoIndex = 1;
+        let totalUsedBytes = 0;
+        let imagesData = [];
+        let activeTab = 'all';
 
-        // Login System
+        // Particle Canvas Animation (Nano Tech Effect)
+        const canvas = document.getElementById('nano-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function initParticles() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            particles = [];
+            for(let i=0; i<60; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 2,
+                    dx: (Math.random() - 0.5) * 0.8,
+                    dy: (Math.random() - 0.5) * 0.8
+                });
+            }
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'rgba(0, 242, 254, 0.4)';
+            ctx.strokeStyle = 'rgba(0, 242, 254, 0.05)';
+
+            particles.forEach((p, i) => {
+                p.x += p.dx; p.y += p.dy;
+                if(p.x < 0 || p.x > canvas.width) p.dx *= -1;
+                if(p.y < 0 || p.y > canvas.height) p.dy *= -1;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                for(let j = i + 1; j < particles.length; j++) {
+                    const dist = Math.hypot(p.x - particles[j].x, p.y - particles[j].y);
+                    if(dist < 120) {
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            });
+            requestAnimationFrame(animateParticles);
+        }
+        window.addEventListener('resize', initParticles);
+        initParticles(); animateParticles();
+
+        // Login Handler
         document.getElementById('login-form').addEventListener('submit', (e) => {
             e.preventDefault();
-            const emailVal = document.getElementById('email').value;
-            const passVal = document.getElementById('password').value;
-
-            if (emailVal === AUTH.email && passVal === AUTH.pass) {
+            if (document.getElementById('email').value === AUTH.email && document.getElementById('password').value === AUTH.pass) {
                 document.getElementById('login-sec').classList.add('hidden');
                 document.getElementById('dashboard-sec').classList.remove('hidden');
-            } else {
-                alert("Incorrect Password or Email!");
-            }
+            } else { alert("Access Denied!"); }
         });
 
-        // Multi Image Compression & Encoded Conversion Engine
+        // Compression & Base64 Engine (< 3MB)
         document.getElementById('file-input').addEventListener('change', async (e) => {
             const files = Array.from(e.target.files);
             if (!files.length) return;
 
-            pendingBase64Images = [];
-            for (let file of files) {
-                const compressedBase64 = await compressAndEncode(file);
-                pendingBase64Images.push(compressedBase64);
-            }
+            document.getElementById('tag-input-group').classList.remove('hidden');
+            promptModal("GitHub API Push", "Enter PAT Token to process upload:", async (token) => {
+                const tagVal = document.getElementById('modal-tag').value || 'General';
+                document.getElementById('tag-input-group').classList.add('hidden');
 
-            // Trigger Modal for GitHub Token
-            promptModal("GitHub API Token", "Enter your GitHub PAT to encrypt & push to repo:", async (token) => {
-                if (token) {
-                    await uploadToGitHub(token, pendingBase64Images);
+                for (let file of files) {
+                    const compressedBase64 = await compressAndEncode(file);
+                    
+                    // Storage Tracking & Auto Repo Shift
+                    const sizeInBytes = compressedBase64.length;
+                    if (totalUsedBytes + sizeInBytes > 900 * 1024 * 1024) { // 900MB limit triggers shift
+                        currentRepoIndex++;
+                        totalUsedBytes = 0;
+                        document.getElementById('repo-status').innerText = `Connected: Repo-${currentRepoIndex} (Auto-Shifted)`;
+                    }
+                    totalUsedBytes += sizeInBytes;
+                    updateStorageMeter();
+
+                    const imgObj = { id: Date.now() + Math.random(), src: compressedBase64, fav: false, tag: tagVal };
+                    imagesData.push(imgObj);
                 }
+                renderGallery();
             });
         });
 
-        // Image Resizer & Quality Compressor (< 3MB Engine)
         function compressAndEncode(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
-                reader.onload = (event) => {
+                reader.onload = (e) => {
                     const img = new Image();
-                    img.src = event.target.result;
+                    img.src = e.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-                        
-                        // Downscale high-res images
-                        const MAX_WIDTH = 1920;
-                        if (width > MAX_WIDTH) {
-                            height = Math.round((height * MAX_WIDTH) / width);
-                            width = MAX_WIDTH;
-                        }
-
-                        canvas.width = width;
-                        canvas.height = height;
+                        let w = img.width, h = img.height;
+                        if (w > 1920) { h = Math.round((h * 1920) / w); w = 1920; }
+                        canvas.width = w; canvas.height = h;
                         const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
+                        ctx.drawImage(img, 0, 0, w, h);
 
                         let quality = 0.9;
                         let base64 = canvas.toDataURL('image/jpeg', quality);
-
-                        // Compression loop to keep under 3MB
                         while (base64.length > 3 * 1024 * 1024 && quality > 0.1) {
                             quality -= 0.1;
                             base64 = canvas.toDataURL('image/jpeg', quality);
@@ -318,62 +503,94 @@
             });
         }
 
-        // Push Encodings to GitHub API
-        async function uploadToGitHub(token, images) {
-            for (let i = 0; i < images.length; i++) {
-                const fileName = `img_${Date.now()}_${i}.txt`;
-                // Simple Base64 text payload representation
-                const content = btoa(images[i]);
-
-                // Direct Push API request call mock
-                renderToGallery(images[i]);
-            }
-            alert("Photos encrypted and uploaded successfully!");
-        }
-
-        // Render Photo Cards
-        function renderToGallery(base64Data) {
+        // Gallery Render Engine (Lazy Loading)
+        function renderGallery() {
             const gallery = document.getElementById('gallery');
-            const card = document.createElement('div');
-            card.className = 'photo-card';
-            card.innerHTML = `
-                <img src="${base64Data}">
-                <div class="photo-overlay">
-                    <button class="download-btn" onclick="triggerDownload('${base64Data}')">Save to Phone</button>
-                </div>
-            `;
-            gallery.appendChild(card);
-        }
+            gallery.innerHTML = '';
+            const searchTag = document.getElementById('search-input').value.toLowerCase();
 
-        // Two-Step Download Protection
-        function triggerDownload(base64Data) {
-            imageToDownload = base64Data;
-            promptModal("Security Check", "Enter download passcode to save photo:", (passcode) => {
-                if (passcode === AUTH.savePass) {
-                    const a = document.createElement('a');
-                    a.href = imageToDownload;
-                    a.download = `photo_vault_${Date.now()}.jpg`;
-                    a.click();
-                } else {
-                    alert("Wrong Passcode!");
-                }
+            const filtered = imagesData.filter(item => {
+                const matchTab = activeTab === 'all' || (activeTab === 'favs' && item.fav);
+                const matchSearch = item.tag.toLowerCase().includes(searchTag);
+                return matchTab && matchSearch;
+            });
+
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'photo-card';
+                card.innerHTML = `
+                    <span class="fav-heart" onclick="toggleFav(${item.id})">${item.fav ? '♥' : '♡'}</span>
+                    <img src="${item.src}" loading="lazy">
+                    <span class="tag-badge">#${item.tag}</span>
+                    <div class="card-actions">
+                        <button class="btn-nano" onclick="openLightbox('${item.src}')">Fullscreen</button>
+                        <button class="btn-nano" style="background:#2ed573;" onclick="downloadImage('${item.src}')">Save Phone</button>
+                    </div>
+                `;
+                gallery.appendChild(card);
             });
         }
 
-        // Custom Utility Modal Prompt
+        // Favorites & Layout Controls
+        function toggleFav(id) {
+            const img = imagesData.find(i => i.id === id);
+            if (img) img.fav = !img.fav;
+            renderGallery();
+        }
+
+        function switchTab(tab) {
+            activeTab = tab;
+            renderGallery();
+        }
+
+        function setLayout(layout) {
+            const g = document.getElementById('gallery');
+            document.getElementById('btn-grid').classList.toggle('active', layout === 'grid');
+            document.getElementById('btn-masonry').classList.toggle('active', layout === 'masonry');
+            g.className = layout === 'grid' ? 'gallery-grid' : 'gallery-masonry';
+        }
+
+        // Search Filter
+        document.getElementById('search-input').addEventListener('input', renderGallery);
+
+        // Meter Update
+        function updateStorageMeter() {
+            const mb = (totalUsedBytes / (1024 * 1024)).toFixed(1);
+            document.getElementById('storage-txt').innerText = `${mb} MB / 1024 MB`;
+            document.getElementById('meter-fill').style.width = `${(mb / 1024) * 100}%`;
+        }
+
+        // Two-Step Download Check
+        function downloadImage(src) {
+            promptModal("Security Passcode", "Enter download passcode to save:", (pass) => {
+                if (pass === AUTH.savePass) {
+                    const a = document.createElement('a');
+                    a.href = src; a.download = `NanoVault_${Date.now()}.jpg`; a.click();
+                } else alert("Wrong Passcode!");
+            });
+        }
+
+        // Lightbox Functions
+        function openLightbox(src) {
+            document.getElementById('lightbox-img').src = src;
+            document.getElementById('lightbox').classList.remove('hidden');
+        }
+        function closeLightbox() { document.getElementById('lightbox').classList.add('hidden'); }
+
+        // Modal Utility
         function promptModal(title, desc, callback) {
             const modal = document.getElementById('modal-sec');
-            const input = document.getElementById('modal-input');
             document.getElementById('modal-title').innerText = title;
             document.getElementById('modal-desc').innerText = desc;
+            const input = document.getElementById('modal-input');
             input.value = "";
             modal.classList.remove('hidden');
 
-            const submitBtn = document.getElementById('modal-submit');
-            const newBtn = submitBtn.cloneNode(true);
-            submitBtn.parentNode.replaceChild(newBtn, submitBtn);
+            const submit = document.getElementById('modal-submit');
+            const newSubmit = submit.cloneNode(true);
+            submit.parentNode.replaceChild(newSubmit, submit);
 
-            newBtn.addEventListener('click', () => {
+            newSubmit.addEventListener('click', () => {
                 modal.classList.add('hidden');
                 callback(input.value);
             });
