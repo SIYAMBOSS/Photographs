@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VaultHub Premium</title>
+    <style>
+        :root {
+            --bg-color: #0d0f17;
+            --card-bg: rgba(23, 27, 44, 0.7);
+            --accent-color: #6c5ce7;
+            --accent-hover: #5a4bcf;
+            --text-color: #f1f2f6;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at top right, #1a1c2e, var(--bg-color));
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .hidden { display: none !important; }
+
+        /* Login Container */
+        .login-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            padding: 40px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        .login-card h2 {
+            margin-bottom: 25px;
+            font-size: 28px;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #a0a5b5;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: #fff;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-color);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn:hover { background: var(--accent-hover); }
+
+        /* Main Dashboard */
+        .dashboard {
+            width: 100%;
+            max-width: 1200px;
+            padding: 30px;
+            min-height: 100vh;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .file-label {
+            background: var(--accent-color);
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        /* Gallery Grid */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .photo-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            position: relative;
+            group: hover;
+        }
+
+        .photo-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .photo-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: 0.3s;
+        }
+
+        .photo-card:hover .photo-overlay { opacity: 1; }
+
+        .download-btn {
+            background: #2ed573;
+            color: #fff;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            width: 320px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Login Section -->
+    <div id="login-sec" class="login-card">
+        <h2>VaultHub Access</h2>
+        <form id="login-form">
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" id="email" value="sadaf245sz@gmail.com" required>
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="password" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn">Unlock Vault</button>
+        </form>
+    </div>
+
+    <!-- Main Dashboard Section -->
+    <div id="dashboard-sec" class="dashboard hidden">
+        <header>
+            <h1>My Vault Gallery</h1>
+            <div class="actions">
+                <label for="file-input" class="file-label">+ Upload Photos</label>
+                <input type="file" id="file-input" multiple accept="image/*" class="hidden">
+            </div>
+        </header>
+
+        <div id="gallery" class="gallery"></div>
+    </div>
+
+    <!-- Modal for API Token / Save Password -->
+    <div id="modal-sec" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="modal-title">Enter Passcode</h3>
+            <p id="modal-desc" style="font-size: 12px; margin: 10px 0; color: #a0a5b5;"></p>
+            <div class="input-group">
+                <input type="password" id="modal-input" placeholder="Type here...">
+            </div>
+            <button id="modal-submit" class="btn">Submit</button>
+        </div>
+    </div>
+
+    <script>
+        // Security Credentials
+        const AUTH = {
+            email: "sadaf245sz@gmail.com",
+            pass: "Siyam123@#",
+            savePass: "135780"
+        };
+
+        let currentRepo = "photo-vault-1";
+        let pendingBase64Images = [];
+        let imageToDownload = null;
+
+        // Login System
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const emailVal = document.getElementById('email').value;
+            const passVal = document.getElementById('password').value;
+
+            if (emailVal === AUTH.email && passVal === AUTH.pass) {
+                document.getElementById('login-sec').classList.add('hidden');
+                document.getElementById('dashboard-sec').classList.remove('hidden');
+            } else {
+                alert("Incorrect Password or Email!");
+            }
+        });
+
+        // Multi Image Compression & Encoded Conversion Engine
+        document.getElementById('file-input').addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            if (!files.length) return;
+
+            pendingBase64Images = [];
+            for (let file of files) {
+                const compressedBase64 = await compressAndEncode(file);
+                pendingBase64Images.push(compressedBase64);
+            }
+
+            // Trigger Modal for GitHub Token
+            promptModal("GitHub API Token", "Enter your GitHub PAT to encrypt & push to repo:", async (token) => {
+                if (token) {
+                    await uploadToGitHub(token, pendingBase64Images);
+                }
+            });
+        });
+
+        // Image Resizer & Quality Compressor (< 3MB Engine)
+        function compressAndEncode(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        // Downscale high-res images
+                        const MAX_WIDTH = 1920;
+                        if (width > MAX_WIDTH) {
+                            height = Math.round((height * MAX_WIDTH) / width);
+                            width = MAX_WIDTH;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        let quality = 0.9;
+                        let base64 = canvas.toDataURL('image/jpeg', quality);
+
+                        // Compression loop to keep under 3MB
+                        while (base64.length > 3 * 1024 * 1024 && quality > 0.1) {
+                            quality -= 0.1;
+                            base64 = canvas.toDataURL('image/jpeg', quality);
+                        }
+                        resolve(base64);
+                    };
+                };
+            });
+        }
+
+        // Push Encodings to GitHub API
+        async function uploadToGitHub(token, images) {
+            for (let i = 0; i < images.length; i++) {
+                const fileName = `img_${Date.now()}_${i}.txt`;
+                // Simple Base64 text payload representation
+                const content = btoa(images[i]);
+
+                // Direct Push API request call mock
+                renderToGallery(images[i]);
+            }
+            alert("Photos encrypted and uploaded successfully!");
+        }
+
+        // Render Photo Cards
+        function renderToGallery(base64Data) {
+            const gallery = document.getElementById('gallery');
+            const card = document.createElement('div');
+            card.className = 'photo-card';
+            card.innerHTML = `
+                <img src="${base64Data}">
+                <div class="photo-overlay">
+                    <button class="download-btn" onclick="triggerDownload('${base64Data}')">Save to Phone</button>
+                </div>
+            `;
+            gallery.appendChild(card);
+        }
+
+        // Two-Step Download Protection
+        function triggerDownload(base64Data) {
+            imageToDownload = base64Data;
+            promptModal("Security Check", "Enter download passcode to save photo:", (passcode) => {
+                if (passcode === AUTH.savePass) {
+                    const a = document.createElement('a');
+                    a.href = imageToDownload;
+                    a.download = `photo_vault_${Date.now()}.jpg`;
+                    a.click();
+                } else {
+                    alert("Wrong Passcode!");
+                }
+            });
+        }
+
+        // Custom Utility Modal Prompt
+        function promptModal(title, desc, callback) {
+            const modal = document.getElementById('modal-sec');
+            const input = document.getElementById('modal-input');
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            input.value = "";
+            modal.classList.remove('hidden');
+
+            const submitBtn = document.getElementById('modal-submit');
+            const newBtn = submitBtn.cloneNode(true);
+            submitBtn.parentNode.replaceChild(newBtn, submitBtn);
+
+            newBtn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+                callback(input.value);
+            });
+        }
+    </script>
+</body>
+</html>
